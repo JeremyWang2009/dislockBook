@@ -1,0 +1,290 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>分布式锁的实现 · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.3">
+        
+        
+        
+    
+    <link rel="stylesheet" href="gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    
+    <link rel="prev" href="./" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter active" data-level="1.1.1" data-path="content.html">
+            
+                <a href="content.html">
+            
+                    
+                    分布式锁的实现
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="." >分布式锁的实现</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="&#x6982;&#x8FF0;">&#x6982;&#x8FF0;</h1>
+<p>&#x5F53;&#x4E1A;&#x52A1;&#x53D1;&#x5C55;&#x5230;&#x4E00;&#x5B9A;&#x7A0B;&#x5EA6;&#x7684;&#x65F6;&#x5019;&#xFF0C;&#x96C6;&#x7FA4;&#x73AF;&#x5883;&#x642D;&#x5EFA;&#x670D;&#x52A1;&#x5C31;&#x5728;&#x6240;&#x96BE;&#x514D;&#xFF0C;&#x96C6;&#x7FA4;&#x73AF;&#x5883;&#x4E0D;&#x540C;&#x4E8E;&#x5355;&#x673A;&#x73AF;&#x5883;&#xFF0C;&#x5355;&#x7EAF;&#x7684; JVM &#x9501;&#x4E0D;&#x518D;&#x6709;&#x610F;&#x4E49;&#xFF0C;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x81EA;&#x7136;&#x5E94;&#x7528;&#x800C;&#x751F;&#xFF0C;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x53EF;&#x4EE5;&#x6709;&#x6548;&#x89E3;&#x51B3;&#x7A0B;&#x5E8F;&#x7684;&#x5E76;&#x53D1;&#x6267;&#x884C;&#x3002;
+&#x5B9E;&#x73B0;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x7684;&#x65B9;&#x5F0F;&#x5927;&#x81F4;&#x6709;&#x4E09;&#x79CD;&#xFF0C;&#x5206;&#x522B;&#x662F;&#x57FA;&#x4E8E; DB&#x3001;Redis&#x3001;Zookeeper &#x8FD9;&#x4E09;&#x79CD;&#x3002;&#x4E0B;&#x9762;&#x5C06;&#x8BB2;&#x89E3;&#x8FD9;&#x4E09;&#x79CD;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x7684;&#x5177;&#x4F53;&#x5B9E;&#x73B0;&#x65B9;&#x5F0F;&#x3002;</p>
+<h1 id="base-redis">Base Redis</h1>
+<h2 id="&#x9501;&#x7684;&#x8981;&#x6C42;">&#x9501;&#x7684;&#x8981;&#x6C42;</h2>
+<p>&#x5B9E;&#x73B0;&#x4E00;&#x4E2A;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x6700;&#x57FA;&#x672C;&#x7684;&#x9700;&#x8981;&#x6EE1;&#x8DB3;&#x4E09;&#x70B9;&#xFF1A;</p>
+<ul>
+<li>&#x5B89;&#x5168;&#x5C5E;&#x6027;&#xFF1A;&#x72EC;&#x5360;&#xFF08;&#x76F8;&#x4E92;&#x6392;&#x65A5;&#xFF09;&#xFF0C;&#x5728;&#x4EFB;&#x610F;&#x4E00;&#x4E2A;&#x65F6;&#x523B;&#xFF0C;&#x6700;&#x591A;&#x53EA;&#x6709;&#x4E00;&#x4E2A;&#x5BA2;&#x6237;&#x7AEF;&#x6301;&#x6709;&#x8BE5;&#x9501;</li>
+<li>&#x6D3B;&#x6027; A&#xFF1A;&#x65E0;&#x6B7B;&#x9501;&#xFF0C;&#x5373;&#x4FBF;&#x6301;&#x6709;&#x9501;&#x7684;&#x5BA2;&#x6237;&#x7AEF;&#x5D29;&#x6E83;&#xFF0C;&#x9501;&#x4ECD;&#x7136;&#x53EF;&#x4EE5;&#x91CA;&#x653E;</li>
+<li>&#x6D3B;&#x6027; B&#xFF1A;&#x5BB9;&#x9519;&#x6027;&#xFF0C;&#x53EA;&#x8981;&#x5927;&#x90E8;&#x5206; Redis &#x8282;&#x70B9;&#x90FD;&#x6D3B;&#x7740;&#xFF0C;&#x5BA2;&#x6237;&#x7AEF;&#x4ECD;&#x7136;&#x53EF;&#x4EE5;&#x83B7;&#x53D6;&#x548C;&#x91CA;&#x653E;&#x9501;</li>
+</ul>
+<h2 id="&#x9501;&#x7684;&#x5B9E;&#x73B0;">&#x9501;&#x7684;&#x5B9E;&#x73B0;</h2>
+<ol>
+<li>&#x83B7;&#x53D6;&#x9501;  </li>
+</ol>
+<p>&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x89E3;&#x51B3;&#x7684;&#x573A;&#x666F;&#x5C31;&#x662F;&#x6709;&#x70B9;&#x50CF;&#x6211;&#x4EEC;&#x5E73;&#x5E38;&#x73A9;&#x7684;&#x201C;&#x62A2;&#x6905;&#x5B50;&#x201D;&#x6E38;&#x620F;&#xFF0C;&#x5F53;&#x6709;&#x4EBA;&#x5360;&#x7528;&#x65F6;&#xFF0C;&#x5176;&#x4ED6;&#x4EBA;&#x53EA;&#x80FD;&#x653E;&#x5F03;&#x6216;&#x8005;&#x7A0D;&#x540E;&#x91CD;&#x8BD5;&#x3002;&#x4E00;&#x822C;&#x83B7;&#x53D6;&#x9501;&#x53EF;&#x4EE5;&#x7528; SETNX &#x6307;&#x4EE4;&#xFF0C;&#x53EA;&#x5141;&#x8BB8;&#x88AB;&#x4E00;&#x4E2A;&#x5BA2;&#x6237;&#x7AEF;&#x5360;&#x7528;&#xFF0C;&#x60F3;&#x79BB;&#x5F00;&#x65F6;&#xFF0C;&#x53EA;&#x9700;&#x8981;&#x8C03;&#x7528; DEL &#x6307;&#x4EE4;&#x5220;&#x9664;&#x5C31;&#x884C;&#x3002;&#x4F46;&#x662F;&#x6709;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;&#x5982;&#x679C;&#x7A0B;&#x5E8F;&#x6267;&#x884C;&#x5230;&#x4E2D;&#x95F4;&#x7CFB;&#x7EDF;&#x51FA;&#x73B0;&#x5F02;&#x5E38;&#x6216;&#x8005;&#x5954;&#x6E83;&#x4E86;&#xFF0C;&#x53EF;&#x80FD;&#x4F1A;&#x5BFC;&#x81F4; DEL &#x6307;&#x4EE4;&#x6CA1;&#x88AB;&#x8C03;&#x7528;&#xFF0C;&#x8FD9;&#x6837;&#x5C31;&#x4F1A;&#x51FA;&#x73B0;<strong>&#x6B7B;&#x9501;</strong>&#x95EE;&#x9898;&#x3002;&#x4E8E;&#x662F;&#x6211;&#x4EEC;&#x60F3;&#x5230; SETNX &#x7684;&#x65F6;&#x5019;&#x7ED9;&#x547D;&#x4EE4;&#x52A0;&#x4E00;&#x4E2A; EXPIRE &#x8FC7;&#x671F;&#x65F6;&#x95F4;&#xFF0C;&#x4F46;&#x662F;&#x8FD9;&#x79CD;&#x4E5F;&#x5BB9;&#x6613;&#x51FA;&#x73B0;&#x95EE;&#x9898;&#xFF0C;SETNX &#x548C; EXPIRE &#x662F;&#x4E24;&#x4E2A;&#x6307;&#x4EE4;&#xFF0C;&#x5728;SETNX &#x548C; EXPIRE &#x4E4B;&#x95F4;&#x7CFB;&#x7EDF;&#x51FA;&#x73B0;&#x5F02;&#x5E38;&#x6216;&#x8005;&#x5954;&#x6E83;&#x4E86;&#xFF0C;&#x4E5F;&#x4F1A;&#x5BFC;&#x81F4;<strong>&#x6B7B;&#x9501;</strong>&#x3002;&#x6216;&#x8BB8;&#x4F1A;&#x6709;&#x4EBA;&#x60F3;&#x5230; Redis &#x7684;&#x4E8B;&#x52A1;&#xFF0C;&#x4F46;&#x662F; Redis &#x4E8B;&#x52A1;&#x4E0D;&#x786E;&#x4FDD;&#x539F;&#x5B50;&#x6027;&#xFF08;&#x53C2;&#x8003;&#xFF1A; <a href="https://redis.io/topics/transactions" target="_blank">Redis Transcation</a> &#xFF09;&#x3002;&#x4F46;&#x662F;&#x4ECE; Redis 2.8 &#x7248;&#x672C;&#x5F00;&#x59CB;&#x652F;&#x6301; SET &#x547D;&#x4EE4;&#x540C;&#x65F6;&#x8BBE;&#x7F6E; NX&#x3001;EXPIRE &#x7B49;&#x53C2;&#x6570;&#xFF0C;&#x5177;&#x4F53;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;</p>
+<pre><code>127.0.0.1:6379&gt; SET lock_key unique_value NX PX 30000
+OK
+</code></pre><p>&#x8FD9;&#x4E2A;&#x547D;&#x4EE4;&#x884C; Redis &#x670D;&#x52A1;&#x5668;&#x4FDD;&#x8BC1; SETNX &#x548C; EXPIRE &#x662F;&#x4E00;&#x6761;&#x6307;&#x4EE4;&#xFF0C; unique_value  &#x8FD9;&#x4E2A;&#x503C;&#x5728;&#x6240;&#x6709;&#x83B7;&#x53D6;&#x5BA2;&#x6237;&#x7AEF;&#x5FC5;&#x987B;&#x662F;&#x552F;&#x4E00;&#x7684;&#xFF0C;&#x552F;&#x4E00;&#x6027;&#x662F;&#x4E3A;&#x4E86;&#x540E;&#x9762;&#x91CA;&#x653E;&#x9501;&#x7684;&#x65F6;&#x5019;&#x907F;&#x514D;&#x5176;&#x4ED6;&#x5BA2;&#x6237;&#x7AEF;&#x91CA;&#x653E;&#x8BE5;&#x9501;&#xFF0C;unique_value &#x53EF;&#x4EE5;&#x7406;&#x89E3;&#x4E3A; request_id&#xFF1B;NX &#x7684;&#x610F;&#x601D;&#x662F; SET IF NOT EXIST,&#x5373; lock_key &#x4E0D;&#x5B58;&#x5728;&#x65F6;&#xFF0C;&#x6211;&#x4EEC;&#x8FDB;&#x884C; SET &#x64CD;&#x4F5C;&#xFF0C;&#x82E5; lock_key &#x5DF2;&#x7ECF;&#x5B58;&#x5728;&#xFF0C;&#x4E0D;&#x505A;&#x4EFB;&#x4F55;&#x64CD;&#x4F5C;&#xFF1B;PX &#x7ED9; lock_key &#x6DFB;&#x52A0;&#x8FC7;&#x671F;&#x65F6;&#x95F4;&#xFF0C;&#x5177;&#x4F53;&#x65F6;&#x95F4;&#x5C31;&#x662F;&#x540E;&#x9762;&#x7684; 30000&#x3002;</p>
+<ol>
+<li>&#x91CA;&#x653E;&#x9501;
+&#x91CA;&#x653E;&#x9501;&#x5927;&#x5BB6;&#x9996;&#x5148;&#x4F1A;&#x60F3;&#x5230; DEL &#x547D;&#x4EE4;&#x76F4;&#x63A5;&#x64CD;&#x4F5C;&#xFF0C;&#x8FD9;&#x6837;&#x5C31;&#x4F1A;&#x5BFC;&#x81F4;&#x4EFB;&#x610F;&#x5BA2;&#x6237;&#x7AEF;&#x90FD;&#x53EF;&#x4EE5;&#x8FDB;&#x884C;&#x89E3;&#x9501;&#x3002;&#x4E3A;&#x4E86;&#x5B89;&#x5168;&#x8D77;&#x89C1;&#xFF0C;&#x5E94;&#x8BE5;&#x53EA;&#x6709;&#x52A0;&#x9501;&#x7684;&#x62E5;&#x6709;&#x8005;&#x80FD;&#x89E3;&#x9501;&#xFF0C;&#x6240;&#x4EE5;&#x53C2;&#x8003; 1 &#x91CC;&#x9762;&#x8BF4;&#x7684;&#x6DFB;&#x52A0; unique_value&#xFF0C;&#x5728;&#x89E3;&#x9501;&#x4E4B;&#x524D;&#x5148;&#x5224;&#x65AD; lock_key &#x7684;&#x503C;&#x662F;&#x5426;&#x76F8;&#x7B49;&#xFF0C;&#x5982;&#x679C;&#x76F8;&#x7B49;&#xFF0C;&#x624D;&#x80FD;&#x89E3;&#x9501;&#xFF0C;&#x4E8E;&#x662F;&#x5C31;&#x6709;&#x4E86;&#x4E0B;&#x9762;&#x7684;&#x547D;&#x4EE4;&#x884C;&#x89E3;&#x9501;&#xFF1A;<pre><code>127.0.0.1:6379&gt; GET lock_key
+&quot;7663e69f-dfee-4c77-9153-2e9a2f16d478&quot;
+// &#x7A0B;&#x5E8F;&#x91CC;&#x9762;&#x5224;&#x65AD; value &#x662F;&#x5426;&#x548C;&#x5BA2;&#x6237;&#x7AEF;&#x6DFB;&#x52A0;&#x9501;&#x7684; unique_value &#x662F;&#x5426;&#x76F8;&#x7B49;&#xFF0C;&#x76F8;&#x7B49;&#x5219;&#x6267;&#x884C;&#x5982;&#x4E0B; DEL &#x64CD;&#x4F5C;
+127.0.0.1:6379&gt; DEL lock_key
+(integer) 1
+</code></pre>&#x4E0A;&#x8FF0;&#x64CD;&#x4F5C;&#x5176;&#x5B9E;&#x5FFD;&#x7565;&#x4E86;&#x4E00;&#x4E2A;&#x95EE;&#x9898;&#xFF0C; GET &#x548C; DEL &#x662F;&#x4E24;&#x4E2A;&#x6307;&#x4EE4;&#xFF0C;&#x4E5F;&#x4E0D;&#x662F;&#x539F;&#x5B50;&#x6027;&#x7684;&#xFF0C;&#x6240;&#x4EE5;&#x53EF;&#x80FD;&#x4F1A;&#x51FA;&#x73B0;&#x8C03;&#x7528; DEL &#x6307;&#x4EE4;&#x7684;&#x65F6;&#x5019;&#x8FD9;&#x4E2A;&#x9501;&#x5DF2;&#x7ECF;&#x81EA;&#x52A8;&#x5931;&#x6548;&#x4E86;&#xFF08;&#x63A5;&#x53E3;&#x8D85;&#x65F6;&#x60C5;&#x51B5;&#x4E0B;&#x53EF;&#x80FD;&#x4F1A;&#x51FA;&#x73B0;&#xFF09;&#xFF0C;&#x4E0D;&#x662F;&#x8BE5;&#x5BA2;&#x6237;&#x7AEF;&#x9501;&#x6301;&#x6709;&#x7684;&#x9501;&#x4E86;&#xFF0C;&#x6240;&#x4EE5;&#x4E3A;&#x4E86;&#x5B89;&#x5168;&#x8D77;&#x89C1;&#xFF0C;Redis &#x7684; Lua &#x811A;&#x672C;&#x8BE5;&#x5E94;&#x7528;&#x4E86;&#xFF0C;&#x4EE3;&#x7801;&#x5982;&#x4E0B;&#xFF1A;<pre><code>127.0.0.1:6379&gt; eval &apos;if redis.call(&quot;get&quot;,KEYS[1]) == ARGV[1] then return redis.call(&quot;del&quot;,KEYS[1]) else return 0 end&apos; 1 lock_key unique_value
+(integer) 1
+</code></pre>&#x4E0A;&#x8FF0;&#x4EE3;&#x7801;&#x662F;&#x901A;&#x8FC7; Lua &#x811A;&#x672C;&#x5B9E;&#x73B0;&#x7684;&#xFF0C;&#x5148;&#x83B7;&#x53D6; lock_key &#x5BF9;&#x5E94;&#x7684;&#x503C;&#xFF0C;&#x5982;&#x679C; lock_key &#x7684;&#x503C;&#x548C;&#x83B7;&#x53D6;&#x9501;&#x8BBE;&#x7F6E;&#x7684;  unique_value &#x503C;&#x4E00;&#x6837;&#xFF0C;&#x5219;&#x5220;&#x9664;&#x9501;&#xFF0C;&#x8FD9;&#x6837;&#x80FD;&#x907F;&#x514D;&#x5176;&#x4ED6;&#x5BA2;&#x6237;&#x7AEF;&#x5220;&#x9664;&#x8BE5;&#x9501;&#x3002;&#x90A3;&#x4E3A;&#x4EC0;&#x4E48;&#x7528; Lua &#x811A;&#x672C;&#x5B9E;&#x73B0;&#xFF1F;Redis &#x670D;&#x52A1;&#x5668;&#x4F1A;&#x5355;&#x7EBF;&#x7A0B;&#x539F;&#x5B50;&#x6027;&#x7684;&#x6267;&#x884C; Lua &#x811A;&#x672C;&#xFF0C;&#x4FDD;&#x8BC1; Lua &#x811A;&#x672C;&#x5728;&#x5904;&#x7406;&#x7684;&#x8FC7;&#x7A0B;&#x4E2D;&#x4E0D;&#x53D7;&#x5916;&#x754C;&#x6253;&#x6270;&#x800C;&#x4E2D;&#x65AD;&#x3002;<h2 id="&#x9501;&#x7684;&#x95EE;&#x9898;">&#x9501;&#x7684;&#x95EE;&#x9898;</h2>
+&#x5373;&#x4FBF;&#x6309;&#x7167;&#x4E0A;&#x8FF0;&#x8981;&#x6C42;&#x5B9E;&#x73B0;&#x4E86;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#xFF0C;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x4E5F;&#x4E0D;&#x662F; 100% &#x9760;&#x8C31;&#x7684;&#xFF0C;Redis &#x5927;&#x591A;&#x6570;&#x516C;&#x53F8;&#x4EC5;&#x4EC5;&#x53EA;&#x4F5C;&#x4E3A;&#x7F13;&#x5B58;&#xFF0C;&#x4E0D;&#x4F5C;&#x4E3A;&#x6301;&#x4E45;&#x5316;&#x5DE5;&#x5177;&#x3002;&#x5BF9;&#x4E8E;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x5B58;&#x5728;&#x7684;&#x95EE;&#x9898;&#x603B;&#x7ED3;&#x5982;&#x4E0B;&#xFF1A;</li>
+<li>&#x63A5;&#x53E3;&#x8D85;&#x65F6;&#x95EE;&#x9898;
+&#x5982;&#x679C;&#x83B7;&#x53D6;&#x9501;&#x548C;&#x91CA;&#x653E;&#x9501;&#x4E4B;&#x95F4;&#xFF0C;&#x63A5;&#x53E3;&#x51FA;&#x73B0;&#x8D85;&#x65F6;&#xFF0C;&#x4EE5;&#x81F3;&#x4E8E;&#x8D85;&#x51FA;&#x4E86;&#x9501;&#x7684;&#x8FC7;&#x671F;&#x65F6;&#x95F4;&#xFF0C;&#x4F1A;&#x5BFC;&#x81F4;&#x5E76;&#x53D1;&#x6267;&#x884C;&#x4E34;&#x754C;&#x533A;&#x7A0B;&#x5E8F;&#x3002;</li>
+<li>&#x4E0D;&#x652F;&#x6301;&#x91CD;&#x5165;&#x6027;
+&#x53EF;&#x91CD;&#x5165;&#x6027;&#xFF0C;&#x662F;&#x6307;&#x7EBF;&#x7A0B;&#x5728;&#x6301;&#x6709;&#x9501;&#x7684;&#x60C5;&#x51B5;&#x4E0B;&#x518D;&#x6B21;&#x8BF7;&#x6C42;&#x8BE5;&#x9501;&#xFF0C;&#x5982;&#x679C;&#x4E00;&#x4E2A;&#x9501;&#x652F;&#x6301;&#x540C;&#x4E00;&#x4E2A;&#x7EBF;&#x7A0B;&#x591A;&#x6B21;&#x6DFB;&#x52A0;&#x9501;&#xFF0C;&#x90A3;&#x4E48;&#x8FD9;&#x4E2A;&#x9501;&#x5C31;&#x662F;&#x652F;&#x6301;&#x91CD;&#x5165;&#x6027;&#x7684;&#x3002;&#x5355;&#x7EAF;&#x7684; Redis &#x547D;&#x4EE4;&#x4E0D;&#x652F;&#x6301;&#xFF0C;&#x9700;&#x8981;&#x81EA;&#x5DF1;&#x8FDB;&#x884C;&#x5C01;&#x88C5;</li>
+<li>Sentinel &#x96C6;&#x7FA4;&#x4E3B;&#x4ECE;&#x53D1;&#x751F; failover
+&#x5BA2;&#x6237;&#x7AEF;&#x4ECE; Master &#x8282;&#x70B9;&#x83B7;&#x53D6;&#x9501;&#xFF0C;Master &#x5C06;&#x9501;&#x540C;&#x6B65;&#x5230; Slave &#x4E4B;&#x524D;&#xFF0C;Master &#x5B95;&#x673A;&#x4E86;&#xFF0C;Slave &#x8282;&#x70B9;&#x88AB;&#x664B;&#x7EA7;&#x4E3A; Master &#x8282;&#x70B9;&#xFF0C;&#x6B64;&#x65F6;&#x4E5F;&#x4F1A;&#x51FA;&#x73B0;&#x5E76;&#x53D1;&#x6267;&#x884C;&#x4E34;&#x754C;&#x533A;&#x7A0B;&#x5E8F;&#x3002;</li>
+</ol>
+<p>&#x4E0A;&#x8FF0;&#x7F57;&#x5217;&#x7684;&#x4E09;&#x4E2A;&#x95EE;&#x9898;&#xFF0C;&#x751F;&#x4EA7;&#x73AF;&#x5883;&#x90FD;&#x662F;&#x5C0F;&#x6982;&#x7387;&#x573A;&#x666F;&#xFF0C;&#x4F46;&#x662F;&#x4E3A;&#x4E86;&#x907F;&#x514D;&#xFF0C;&#x95EE;&#x9898;&#xFF08;1&#xFF09;&#x5EFA;&#x8BAE;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x4E0D;&#x8981;&#x5E94;&#x7528;&#x4E8E;&#x65F6;&#x95F4;&#x8F83;&#x957F;&#x7684;&#x63A5;&#x53E3;&#x6216;&#x4EFB;&#x52A1;&#xFF1B;&#x95EE;&#x9898;&#xFF08;2&#xFF09;&#x4E00;&#x822C;&#x4E1A;&#x52A1;&#x4F7F;&#x7528;&#x5230;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x90FD;&#x4E0D;&#x4F1A;&#x7528;&#x5230;&#x91CD;&#x5165;&#x6027;&#xFF0C;&#x5982;&#x9700;&#x7528;&#x5230;&#xFF0C;&#x53EF;&#x81EA;&#x884C;&#x5C01;&#x88C5;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x5F15;&#x7528; <a href="https://github.com/redisson/redisson" target="_blank">Redssion</a>&#xFF1B;&#x95EE;&#x9898;&#xFF08;3&#xFF09;&#x7684;&#x89E3;&#x51B3;&#x65B9;&#x6848;&#x53EF;&#x4EE5;&#x53C2;&#x8003; <a href="https://redis.io/topics/distlock" target="_blank">Redlock</a>&#x3002;&#x5BF9;&#x4E8E;&#x4F7F;&#x7528;&#x5206;&#x5E03;&#x5F0F;&#x7684;&#x76EE;&#x7684;&#x53EF;&#x4EE5;&#x53C2;&#x8003;&#x8FD9;&#x7BC7;&#x6587;&#x7AE0; <a href="https://www.xilidou.com/2017/10/29/Redis-RedLock-%E5%AE%8C%E7%BE%8E%E7%9A%84%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E4%B9%88%EF%BC%9F/" target="_blank">Redis RedLock &#x5B8C;&#x7F8E;&#x7684;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#x4E48;&#xFF1F;</a>&#xFF0C;&#x5BF9;&#x4E8E;&#x4E25;&#x683C;&#x8981;&#x6C42;&#x7684;&#x573A;&#x666F;&#xFF08;&#x6BD4;&#x5982;&#x8BA2;&#x5355;&#x3001;&#x91D1;&#x989D;&#xFF09;&#xFF0C;&#x5373;&#x4FBF;&#x4F7F;&#x7528;&#x5206;&#x5E03;&#x5F0F;&#x9501;&#xFF0C;&#x4E5F;&#x4E0D;&#x80FD;&#x4FDD;&#x8BC1;&#x9501;&#x7684;&#x6B63;&#x786E;&#x6027;&#xFF0C;&#x5176;&#x4ED6;&#x975E;&#x4E25;&#x683C;&#x573A;&#x666F;&#xFF0C;&#x53EF;&#x4EE5;&#x53C2;&#x8003;&#x81EA;&#x5DF1;&#x7684;&#x4E1A;&#x52A1;&#x662F;&#x5426;&#x80FD;&#x5BB9;&#x5FCD;&#x8FD9;&#x79CD;&#x5C0F;&#x6982;&#x7387;&#x4E8B;&#x4EF6;&#x4E86;&#x3002;</p>
+<h1 id="&#x53C2;&#x8003;&#x9605;&#x8BFB;">&#x53C2;&#x8003;&#x9605;&#x8BFB;</h1>
+<ol>
+<li><a href="https://redis.io/topics/distlock" target="_blank">https://redis.io/topics/distlock</a></li>
+<li><a href="https://redis.io/topics/transactions" target="_blank">https://redis.io/topics/transactions</a></li>
+<li><a href="https://www.xilidou.com/2017/10/29/Redis-RedLock-%E5%AE%8C%E7%BE%8E%E7%9A%84%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E4%B9%88%EF%BC%9F/" target="_blank">https://www.xilidou.com/2017/10/29/Redis-RedLock-%E5%AE%8C%E7%BE%8E%E7%9A%84%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E4%B9%88%EF%BC%9F/</a></li>
+</ol>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="./" class="navigation navigation-prev navigation-unique" aria-label="Previous page: Introduction">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"分布式锁的实现","level":"1.1.1","depth":2,"previous":{"title":"Introduction","level":"1.1","depth":1,"path":"README.md","ref":"README.md","articles":[{"title":"分布式锁的实现","level":"1.1.1","depth":2,"path":"content.md","ref":"content.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["livereload"],"pluginsConfig":{"livereload":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"content.md","mtime":"2018-12-26T13:07:34.230Z","type":"markdown"},"gitbook":{"version":"3.2.3","time":"2018-12-26T13:07:40.690Z"},"basePath":".","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="gitbook/gitbook.js"></script>
+    <script src="gitbook/theme.js"></script>
+    
+        
+        <script src="gitbook/gitbook-plugin-livereload/plugin.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
