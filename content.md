@@ -19,6 +19,7 @@ OK
 这个命令行 Redis 服务器保证 SETNX 和 EXPIRE 是一条指令， unique_value  这个值在所有获取客户端必须是唯一的，唯一性是为了后面释放锁的时候避免其他客户端释放该锁，unique_value 可以理解为 request_id；NX 的意思是 SET IF NOT EXIST,即 lock_key 不存在时，我们进行 SET 操作，若 lock_key 已经存在，不做任何操作；PX 给 lock_key 添加过期时间，具体时间就是后面的 30000。
 
 2. 释放锁
+
 释放锁大家首先会想到 DEL 命令直接操作，这样就会导致任意客户端都可以进行解锁。为了安全起见，应该只有加锁的拥有者能解锁，所以参考 1 里面说的添加 unique_value，在解锁之前先判断 lock_key 的值是否相等，如果相等，才能解锁，于是就有了下面的命令行解锁：
 ```
 127.0.0.1:6379> GET lock_key
